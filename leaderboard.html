@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>CingSi 金融即時排行榜</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-black text-white p-10">
+    <div class="max-w-5xl mx-auto text-center">
+        <h1 class="text-6xl font-black text-yellow-500 mb-10 tracking-widest">💰 全班財富即時榜</h1>
+        
+        <div id="board" class="grid gap-4">
+            <div class="text-gray-500 text-2xl">正在連線至市場數據...</div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC22jClkL3BnJifDpAaaz40kmyKEMZravY",
+            authDomain: "csps-899f4.firebaseapp.com",
+            databaseURL: "https://csps-899f4-default-rtdb.firebaseio.com",
+            projectId: "csps-899f4",
+            storageBucket: "csps-899f4.firebasestorage.app",
+            appId: "1:719907049932:web:e7a8ac6b6dd04f11048d69"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 監聽數據變化
+        db.ref('players').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            // 轉成陣列並排序
+            const players = Object.entries(data)
+                .map(([name, info]) => ({ name, ...info }))
+                .sort((a, b) => b.score - a.score);
+
+            const board = document.getElementById('board');
+            board.innerHTML = "";
+
+            players.forEach((p, index) => {
+                const color = index === 0 ? "bg-yellow-500 text-black scale-110" : "bg-gray-800";
+                const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index+1}`;
+                
+                board.innerHTML += `
+                    <div class="${color} flex justify-between items-center p-6 rounded-lg transition-all duration-500 shadow-lg">
+                        <div class="text-4xl font-bold w-20">${medal}</div>
+                        <div class="text-4xl font-bold flex-1 text-left">${p.name}</div>
+                        <div class="text-5xl font-mono font-black">$${p.score}</div>
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
