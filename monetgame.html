@@ -2,158 +2,140 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>金融風暴：生存博弈</title>
+    <title>金融生存戰 - 學生端</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .event-flash { animation: flash 0.5s infinite; }
-        @keyframes flash {
-            0% { background-color: #ef4444; }
-            50% { background-color: #1f2937; }
-        }
-    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-gray-900 text-white p-8">
-
-    <div class="max-w-4xl mx-auto">
-        <header class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-            <h1 class="text-3xl font-bold text-yellow-500">💰 金融生存戰</h1>
-            <div class="text-right">
-                <p id="round-display" class="text-xl">第 1 輪</p>
-                <p id="timer" class="text-sm text-gray-400">距離下一波事件: 10s</p>
-            </div>
-        </header>
-
-        <div class="grid grid-cols-3 gap-4 mb-8">
-            <div class="bg-gray-800 p-4 rounded-lg text-center">
-                <p class="text-gray-400">科技股 (Tech)</p>
-                <p id="price-tech" class="text-2xl font-mono text-green-400">$100</p>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-lg text-center">
-                <p class="text-gray-400">能源股 (Energy)</p>
-                <p id="price-energy" class="text-2xl font-mono text-blue-400">$100</p>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-lg text-center">
-                <p class="text-gray-400">避險黃金 (Gold)</p>
-                <p id="price-gold" class="text-2xl font-mono text-yellow-400">$100</p>
-            </div>
-        </div>
-
-        <div class="bg-gray-700 p-6 rounded-xl shadow-2xl mb-8">
-            <h2 class="text-xl mb-4 border-l-4 border-yellow-500 pl-2">玩家帳戶：王老師</h2>
-            <div class="flex justify-around items-center mb-6">
-                <div><p class="text-gray-300">現金</p><p id="player-cash" class="text-3xl font-bold">$1000</p></div>
-                <div><p class="text-gray-300">總資產淨值</p><p id="player-net" class="text-3xl font-bold text-green-500">$1100</p></div>
-            </div>
-            
-            <div class="flex gap-4">
-                <button onclick="buy('tech')" class="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded font-bold">買入科技股</button>
-                <button onclick="buy('energy')" class="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded font-bold">買入能源股</button>
-                <button onclick="sellAll()" class="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded font-bold">全部拋售 (逃命)</button>
-            </div>
-        </div>
-
-        <div id="event-log" class="bg-black p-4 rounded h-40 overflow-y-auto text-sm font-mono text-gray-300">
-            <div>> 系統初始化完成，請開始投資...</div>
+<body class="bg-gray-900 text-white p-4">
+    <div id="login-screen" class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-6">
+        <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
+            <h1 class="text-3xl font-bold text-yellow-500 mb-6">錢進 CingSi</h1>
+            <input id="player-name" type="text" placeholder="請輸入你的姓名" class="w-full p-3 rounded bg-gray-700 mb-4 border border-gray-600 focus:outline-none focus:border-yellow-500">
+            <button onclick="startGame()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-lg text-xl">進入市場</button>
         </div>
     </div>
 
-    <div id="event-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden flex items-center justify-center">
-        <div id="modal-content" class="p-8 rounded-lg text-center max-w-md">
-            <h2 id="event-title" class="text-4xl font-black mb-4">黑天鵝降臨！</h2>
-            <p id="event-desc" class="text-xl mb-6"></p>
-            <button onclick="closeModal()" class="bg-white text-black px-6 py-2 rounded-full font-bold">我知道了 (繼續戰鬥)</button>
+    <div class="max-w-md mx-auto">
+        <header class="flex justify-between items-center mb-6">
+            <h2 id="display-name" class="text-xl font-bold text-yellow-500 text-ellipsis overflow-hidden">玩家</h2>
+            <div id="timer" class="text-sm bg-red-900 px-3 py-1 rounded-full">黑天鵝倒數: 10s</div>
+        </header>
+
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-gray-800 p-3 rounded text-center border-b-4 border-green-500">
+                <p class="text-xs text-gray-400">科技股</p>
+                <p id="price-tech" class="text-xl font-mono">$100</p>
+            </div>
+            <div class="bg-gray-800 p-3 rounded text-center border-b-4 border-blue-500">
+                <p class="text-xs text-gray-400">能源股</p>
+                <p id="price-energy" class="text-xl font-mono">$100</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-5 rounded-xl mb-6 shadow-inner">
+            <div class="flex justify-between mb-4">
+                <div><p class="text-gray-400 text-sm">現金</p><p id="player-cash" class="text-2xl font-bold">$1000</p></div>
+                <div class="text-right"><p class="text-gray-400 text-sm">總資產</p><p id="player-net" class="text-2xl font-bold text-green-400">$1000</p></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="buy('tech')" class="bg-green-600 py-3 rounded font-bold">買科技</button>
+                <button onclick="buy('energy')" class="bg-blue-600 py-3 rounded font-bold">買能源</button>
+                <button onclick="sellAll()" class="col-span-2 bg-red-600 py-2 mt-2 rounded font-bold">緊急清倉</button>
+            </div>
+        </div>
+
+        <div id="event-log" class="text-xs font-mono text-gray-500 h-24 overflow-y-auto bg-black p-2 rounded">
+            > 準備交易...
         </div>
     </div>
 
     <script>
-        // 遊戲數據
+        // --- Firebase 設定 ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyC22jClkL3BnJifDpAaaz40kmyKEMZravY",
+            authDomain: "csps-899f4.firebaseapp.com",
+            databaseURL: "https://csps-899f4-default-rtdb.firebaseio.com",
+            projectId: "csps-899f4",
+            storageBucket: "csps-899f4.firebasestorage.app",
+            appId: "1:719907049932:web:e7a8ac6b6dd04f11048d69"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let gameState = {
-            round: 1,
+            name: "",
             timeLeft: 10,
-            prices: { tech: 100, energy: 100, gold: 100 },
-            player: { cash: 1000, inventory: { tech: 1, energy: 0, gold: 0 } }
+            prices: { tech: 100, energy: 100 },
+            player: { cash: 1000, inv: { tech: 0, energy: 0 } }
         };
 
-        const blackSwans = [
-            { name: "矽谷大地震", target: "tech", impact: 0.4, msg: "伺服器中心全毀！科技股暴跌 60%！" },
-            { name: "石油禁運", target: "energy", impact: 2.5, msg: "能源供給中斷，電力股瘋漲 150%！" },
-            { name: "金融海嘯", target: "cash", impact: 0.7, msg: "惡性通膨爆發！你的現金購買力縮水 30%！" }
-        ];
+        function startGame() {
+            const nameInput = document.getElementById('player-name').value.trim();
+            if(!nameInput) return alert("請輸入名字");
+            gameState.name = nameInput;
+            document.getElementById('display-name').innerText = "交易員: " + nameInput;
+            document.getElementById('login-screen').classList.add('hidden');
+            startLoop();
+        }
+
+        function startLoop() {
+            setInterval(() => {
+                gameState.timeLeft--;
+                if(gameState.timeLeft <= 0) {
+                    // 模擬黑天鵝隨機波波
+                    if(Math.random() > 0.7) {
+                        const target = Math.random() > 0.5 ? 'tech' : 'energy';
+                        gameState.prices[target] *= (0.4 + Math.random());
+                        log(`市場震撼發生！價格劇烈變動`);
+                    }
+                    gameState.timeLeft = 10;
+                }
+                // 自然波動
+                gameState.prices.tech *= (0.98 + Math.random() * 0.04);
+                gameState.prices.energy *= (0.98 + Math.random() * 0.04);
+                
+                updateUI();
+                syncToFirebase();
+            }, 1000);
+        }
 
         function updateUI() {
-            document.getElementById('price-tech').innerText = `$${gameState.prices.tech.toFixed(1)}`;
-            document.getElementById('price-energy').innerText = `$${gameState.prices.energy.toFixed(1)}`;
-            document.getElementById('price-gold').innerText = `$${gameState.prices.gold.toFixed(1)}`;
+            document.getElementById('price-tech').innerText = `$${gameState.prices.tech.toFixed(0)}`;
+            document.getElementById('price-energy').innerText = `$${gameState.prices.energy.toFixed(0)}`;
             document.getElementById('player-cash').innerText = `$${gameState.player.cash.toFixed(0)}`;
+            document.getElementById('timer').innerText = `黑天鵝倒數: ${gameState.timeLeft}s`;
             
-            let net = gameState.player.cash + (gameState.player.inventory.tech * gameState.prices.tech) + (gameState.player.inventory.energy * gameState.prices.energy);
+            let net = gameState.player.cash + (gameState.player.inv.tech * gameState.prices.tech) + (gameState.player.inv.energy * gameState.prices.energy);
             document.getElementById('player-net').innerText = `$${net.toFixed(0)}`;
+            return net;
         }
 
-        function log(msg) {
-            const el = document.getElementById('event-log');
-            el.innerHTML += `<div>> ${msg}</div>`;
-            el.scrollTop = el.scrollHeight;
-        }
-
-        // 核心邏輯：每一秒更新一次
-        setInterval(() => {
-            gameState.timeLeft--;
-            if (gameState.timeLeft <= 0) {
-                triggerEvent();
-                gameState.timeLeft = 10;
-                gameState.round++;
-                document.getElementById('round-display').innerText = `第 ${gameState.round} 輪`;
-            }
-            document.getElementById('timer').innerText = `距離下一波事件: ${gameState.timeLeft}s`;
-            
-            // 市場自然波動 (+/- 5%)
-            Object.keys(gameState.prices).forEach(key => {
-                gameState.prices[key] *= (0.95 + Math.random() * 0.1);
+        function syncToFirebase() {
+            let net = updateUI();
+            db.ref('players/' + gameState.name).set({
+                score: Math.floor(net),
+                lastUpdate: Date.now()
             });
-            updateUI();
-        }, 1000);
-
-        function triggerEvent() {
-            const event = blackSwans[Math.floor(Math.random() * blackSwans.length)];
-            
-            // 處理邏輯
-            if(event.target === 'cash') {
-                gameState.player.cash *= event.impact;
-            } else {
-                gameState.prices[event.target] *= event.impact;
-            }
-
-            // 顯示彈窗
-            document.getElementById('event-modal').classList.remove('hidden');
-            document.getElementById('modal-content').className = "p-8 rounded-lg text-center max-w-md event-flash";
-            document.getElementById('event-title').innerText = event.name;
-            document.getElementById('event-desc').innerText = event.msg;
-            log(`[事件] ${event.name}: ${event.msg}`);
-        }
-
-        function closeModal() {
-            document.getElementById('event-modal').classList.add('hidden');
         }
 
         function buy(type) {
-            if (gameState.player.cash >= gameState.prices[type]) {
+            if(gameState.player.cash >= gameState.prices[type]) {
                 gameState.player.cash -= gameState.prices[type];
-                gameState.player.inventory[type]++;
-                log(`買入 1 單位 ${type}`);
-                updateUI();
-            } else {
-                alert("錢不夠了！");
+                gameState.player.inv[type]++;
+                log(`買入 ${type}`);
             }
         }
 
         function sellAll() {
-            gameState.player.cash += (gameState.player.inventory.tech * gameState.prices.tech);
-            gameState.player.cash += (gameState.player.inventory.energy * gameState.prices.energy);
-            gameState.player.inventory.tech = 0;
-            gameState.player.inventory.energy = 0;
-            log("執行逃命操作：已全數清倉！");
-            updateUI();
+            gameState.player.cash += (gameState.player.inv.tech * gameState.prices.tech) + (gameState.player.inv.energy * gameState.prices.energy);
+            gameState.player.inv = { tech: 0, energy: 0 };
+            log("清倉大拍賣！");
+        }
+
+        function log(m) {
+            const el = document.getElementById('event-log');
+            el.innerHTML = `<div>> ${m}</div>` + el.innerHTML;
         }
     </script>
 </body>
