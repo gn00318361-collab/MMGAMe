@@ -6,13 +6,13 @@
 
 本專案包含三款金融教育遊戲與即時連線系統，專為國小學生設計，讓孩子透過遊戲體驗理財、投資與風險管理。
 
-| 檔案 | 說明 |
-|------|------|
-| `finance-games.html` | 遊戲大廳（入口頁面） |
-| `moneygame.html` | 🎲 理財生存戰（骰子版） |
-| `monetgame.html` | 📈 金融生存戰（股市版） |
-| `leaderboard.html` | 🏆 即時排行榜 |
-| `admin.html` | 🛑 老師控制台 |
+| 檔案 | 說明 | 連結 |
+|------|------|------|
+| `finance-games.html` | 遊戲大廳（入口頁面） | [開啟](https://gn00318361-collab.github.io/money-game/finance-games.html) |
+| `moneygame.html` | 🎲 理財生存戰（骰子版） | [開啟](https://gn00318361-collab.github.io/money-game/moneygame.html) |
+| `monetgame.html` | 📈 金融生存戰（股市版） | [開啟](https://gn00318361-collab.github.io/money-game/monetgame.html) |
+| `leaderboard.html` | 🏆 即時排行榜 | [開啟](https://gn00318361-collab.github.io/money-game/leaderboard.html) |
+| `admin.html` | 🛑 老師控制台 | [開啟](https://gn00318361-collab.github.io/money-game/admin.html) |
 
 ---
 
