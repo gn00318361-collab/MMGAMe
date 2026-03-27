@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>金融風暴：生存博弈</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .event-flash { animation: flash 0.5s infinite; }
+        @keyframes flash {
+            0% { background-color: #ef4444; }
+            50% { background-color: #1f2937; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <h1 class="text-3xl font-bold text-yellow-500">💰 金融生存戰</h1>
+            <div class="text-right">
+                <p id="round-display" class="text-xl">第 1 輪</p>
+                <p id="timer" class="text-sm text-gray-400">距離下一波事件: 10s</p>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                <p class="text-gray-400">科技股 (Tech)</p>
+                <p id="price-tech" class="text-2xl font-mono text-green-400">$100</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                <p class="text-gray-400">能源股 (Energy)</p>
+                <p id="price-energy" class="text-2xl font-mono text-blue-400">$100</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                <p class="text-gray-400">避險黃金 (Gold)</p>
+                <p id="price-gold" class="text-2xl font-mono text-yellow-400">$100</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-700 p-6 rounded-xl shadow-2xl mb-8">
+            <h2 class="text-xl mb-4 border-l-4 border-yellow-500 pl-2">玩家帳戶：王老師</h2>
+            <div class="flex justify-around items-center mb-6">
+                <div><p class="text-gray-300">現金</p><p id="player-cash" class="text-3xl font-bold">$1000</p></div>
+                <div><p class="text-gray-300">總資產淨值</p><p id="player-net" class="text-3xl font-bold text-green-500">$1100</p></div>
+            </div>
+            
+            <div class="flex gap-4">
+                <button onclick="buy('tech')" class="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded font-bold">買入科技股</button>
+                <button onclick="buy('energy')" class="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded font-bold">買入能源股</button>
+                <button onclick="sellAll()" class="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded font-bold">全部拋售 (逃命)</button>
+            </div>
+        </div>
+
+        <div id="event-log" class="bg-black p-4 rounded h-40 overflow-y-auto text-sm font-mono text-gray-300">
+            <div>> 系統初始化完成，請開始投資...</div>
+        </div>
+    </div>
+
+    <div id="event-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden flex items-center justify-center">
+        <div id="modal-content" class="p-8 rounded-lg text-center max-w-md">
+            <h2 id="event-title" class="text-4xl font-black mb-4">黑天鵝降臨！</h2>
+            <p id="event-desc" class="text-xl mb-6"></p>
+            <button onclick="closeModal()" class="bg-white text-black px-6 py-2 rounded-full font-bold">我知道了 (繼續戰鬥)</button>
+        </div>
+    </div>
+
+    <script>
+        // 遊戲數據
+        let gameState = {
+            round: 1,
+            timeLeft: 10,
+            prices: { tech: 100, energy: 100, gold: 100 },
+            player: { cash: 1000, inventory: { tech: 1, energy: 0, gold: 0 } }
+        };
+
+        const blackSwans = [
+            { name: "矽谷大地震", target: "tech", impact: 0.4, msg: "伺服器中心全毀！科技股暴跌 60%！" },
+            { name: "石油禁運", target: "energy", impact: 2.5, msg: "能源供給中斷，電力股瘋漲 150%！" },
+            { name: "金融海嘯", target: "cash", impact: 0.7, msg: "惡性通膨爆發！你的現金購買力縮水 30%！" }
+        ];
+
+        function updateUI() {
+            document.getElementById('price-tech').innerText = `$${gameState.prices.tech.toFixed(1)}`;
+            document.getElementById('price-energy').innerText = `$${gameState.prices.energy.toFixed(1)}`;
+            document.getElementById('price-gold').innerText = `$${gameState.prices.gold.toFixed(1)}`;
+            document.getElementById('player-cash').innerText = `$${gameState.player.cash.toFixed(0)}`;
+            
+            let net = gameState.player.cash + (gameState.player.inventory.tech * gameState.prices.tech) + (gameState.player.inventory.energy * gameState.prices.energy);
+            document.getElementById('player-net').innerText = `$${net.toFixed(0)}`;
+        }
+
+        function log(msg) {
+            const el = document.getElementById('event-log');
+            el.innerHTML += `<div>> ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        // 核心邏輯：每一秒更新一次
+        setInterval(() => {
+            gameState.timeLeft--;
+            if (gameState.timeLeft <= 0) {
+                triggerEvent();
+                gameState.timeLeft = 10;
+                gameState.round++;
+                document.getElementById('round-display').innerText = `第 ${gameState.round} 輪`;
+            }
+            document.getElementById('timer').innerText = `距離下一波事件: ${gameState.timeLeft}s`;
+            
+            // 市場自然波動 (+/- 5%)
+            Object.keys(gameState.prices).forEach(key => {
+                gameState.prices[key] *= (0.95 + Math.random() * 0.1);
+            });
+            updateUI();
+        }, 1000);
+
+        function triggerEvent() {
+            const event = blackSwans[Math.floor(Math.random() * blackSwans.length)];
+            
+            // 處理邏輯
+            if(event.target === 'cash') {
+                gameState.player.cash *= event.impact;
+            } else {
+                gameState.prices[event.target] *= event.impact;
+            }
+
+            // 顯示彈窗
+            document.getElementById('event-modal').classList.remove('hidden');
+            document.getElementById('modal-content').className = "p-8 rounded-lg text-center max-w-md event-flash";
+            document.getElementById('event-title').innerText = event.name;
+            document.getElementById('event-desc').innerText = event.msg;
+            log(`[事件] ${event.name}: ${event.msg}`);
+        }
+
+        function closeModal() {
+            document.getElementById('event-modal').classList.add('hidden');
+        }
+
+        function buy(type) {
+            if (gameState.player.cash >= gameState.prices[type]) {
+                gameState.player.cash -= gameState.prices[type];
+                gameState.player.inventory[type]++;
+                log(`買入 1 單位 ${type}`);
+                updateUI();
+            } else {
+                alert("錢不夠了！");
+            }
+        }
+
+        function sellAll() {
+            gameState.player.cash += (gameState.player.inventory.tech * gameState.prices.tech);
+            gameState.player.cash += (gameState.player.inventory.energy * gameState.prices.energy);
+            gameState.player.inventory.tech = 0;
+            gameState.player.inventory.energy = 0;
+            log("執行逃命操作：已全數清倉！");
+            updateUI();
+        }
+    </script>
+</body>
+</html>
